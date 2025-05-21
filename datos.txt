@@ -1,0 +1,69 @@
+﻿{
+  "proceso_id": 23267,
+  "estado": "  PROCESANDO",
+  "clave": "2C1101_GXP_22876_14",
+  "sis_codigo": "iurixcl",
+  "entidad_codigo": "legajos",
+  "motivo_col": "VISTA  ",
+  "fecha_rad": 151124,
+  "fecha_control": 152808,
+  "fecha_aud": "154624043680",
+  "fecha_alta": "20-08-2024 09:25:42",
+  "motivo_act": "CLAVE_NUEVA",
+  "tipo_expediente": "GXP",
+  "numero_expediente": 876,
+  "anio_expediente": 2014,
+  "organismo_radicacion": "2C1101",
+  "secretaria": "2CS101",
+  "nivel_acceso": "PUBLICO  ",
+  "domicilio_procesal": "domicilio   legal",
+  "objeto": "proteccion",
+  "petitorio": {
+    "punto_1": "Se  tenga  por  presentado",
+    "punto_2": "Se  tenga  por  iniciada  la presente demanda",
+    "punto_3": "Se  dispongan  las medidas  urgentes"
+  },
+  "legajo_cabecera": {
+    "exp_org_creador": "2C1101",
+    "caratula": "  CHAVEZ   NILDA   POR   VERON   SARA   ANTONIA   S/   PROTECCION   DE   PERSONAS  ",
+    "fecha_radicacion": {
+      "$date": "2014-10-06T00:00:00.000Z"
+    }
+  },
+  "legajo_partes": [
+    {
+      "vinculo_codigo": "ACT",
+      "vinculo_descripcion": "ACTOR",
+      "actora_nombre": "CHAVEZ   NILDA",
+      "actora_dni": "DNI-115647847",
+      "sexo": 0,
+      "tipo_documento": "DNI"
+    },
+    {
+      "vinculo_codigo": "PINS",
+      "vinculo_descripcion": "PRESUNTA   INSANA",
+      "presunta_insana_nombre": "GOMEZ   SARA   ANTONIA",
+      "presunta_insana_dni": "DNI-26049418",
+      "sexo": 0,
+      "tipo_documento": "DNI"
+    }
+  ],
+  "legajo_abogados": [
+    {
+      "vinculo_codigo": "PAT",
+      "vinculo_descripcion": "PATROCINANTE",
+      "abogado_nombre": "  JUAN   GOMEZ",
+      "abogado_matricula": "1.000.000",
+      "representada_nombre": "NEWMAN   NILDA",
+      "representada_dni": "DNI-24372736",
+      "cuit": ""
+    }
+  ],
+  "tipo": "GXP",
+  "anio": 14,
+  "numero": 22876,
+  "exp_org_creador": "2C1101",
+  "org_radicacion": "2C1101",
+  "secre_codigo": "2CS101",
+  "referencia_interna": "ABC123XYZ"
+}
