@@ -1,4 +1,3 @@
-import unicodedata # Se usa para Normalizar los acentos en el texto
 import json
 import re # Se usara para buscar patrones en el texto extraído del PDF
 

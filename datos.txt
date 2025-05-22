@@ -37,7 +37,7 @@
       "actora_nombre": "CHAVEZ   NILDA",
       "actora_dni": "DNI-115647847",
       "sexo": 0,
-      "tipo_documento": "DNI"
+      "tipo_documento_legajo1": "DNI"
     },
     {
       "vinculo_codigo": "PINS",
@@ -45,7 +45,7 @@
       "presunta_insana_nombre": "GOMEZ   SARA   ANTONIA",
       "presunta_insana_dni": "DNI-26049418",
       "sexo": 0,
-      "tipo_documento": "DNI"
+      "tipo_documento_legajo2": "DNI"
     }
   ],
   "legajo_abogados": [
