@@ -1,64 +1,66 @@
+# File: funcs/comparar_json_pdf.py
 import re
+from rapidfuzz import fuzz
 from funcs.extraer_datos_json import extraer_valores_txt
 from funcs.extraer_texto_pdf import extraer_texto_pdf
+from funcs.fuzzy_logic import infer_label
 
-def comparar_valores_json_pdf(json_path='datos.txt', pdf_path='ley.pdf'):
-    """
-    Compara los valores extraídos del JSON con el texto extraído del PDF sin lógica difusa.
-    Imprime los resultados de cada comparación.
-    """
-    # Extraer los valores del archivo JSON
+# Regex para extraer números con separadores
+NUM_REGEX = re.compile(r"\b\d{1,3}(?:[.\-]\d{1,3})*\b")
+
+def comparar_valores_json_pdf(json_path: str = 'datos.txt', pdf_path: str = 'ley.pdf'):
     json_data = extraer_valores_txt(json_path)
-    
-    # Si el JSON no tiene claves, salir
     if not json_data:
         return
 
-    # Extraer el texto del archivo PDF
     texto_pdf = extraer_texto_pdf(pdf_path)
+    words = texto_pdf.split()
 
-    # Limitar el texto del PDF para facilitar la visualización
-    print(f"Texto extraído del PDF (primeros 500 caracteres):\n{texto_pdf[:500]}\n{'-'*50}\n")
-    
-    # Recorrer los datos extraídos del JSON
     for key, value in json_data.items():
-        print(f"\nComparando para el campo: {key}")
-        
-        # Si el valor del JSON es un diccionario, recorrer sus valores
+        print(f"\nCampo: {key}")
+        # Preparar lista de valores a comparar
+        items = []
         if isinstance(value, dict):
-            for sub_key, sub_value in value.items():
-                comparar_sub_valor(sub_key, sub_value, texto_pdf)
-        
-        # Si el valor del JSON es una lista, recorrer los elementos de la lista
+            items = list(value.values())
         elif isinstance(value, list):
             for item in value:
-                for sub_key, sub_value in item.items():
-                    comparar_sub_valor(sub_key, sub_value, texto_pdf)
-        
-        # Si el valor del JSON es un valor simple (string, número, etc.)
+                items.extend(item.values())
         else:
-            comparar_sub_valor(key, value, texto_pdf)
+            items = [value]
 
-def comparar_sub_valor(clave, valor, texto_pdf):
-    """
-    Compara el valor extraído del JSON con el texto extraído del PDF, e imprime el resultado.
-    """
-    # Convertir a cadena y recortar espacios
-    valor_str = str(valor).strip()
-    
-    # Si está vacío, no hacer nada
-    if not valor_str:
-        return
-    
-    # Buscar coincidencias exactas (sin considerar acentos ni variaciones)
-    matches = re.findall(rf'\b{re.escape(valor_str)}\b', texto_pdf, re.IGNORECASE)
-    
-    if matches:
-        # Mostrar todas las coincidencias bajo el mismo campo
-        for match in matches:
-            print(f"Coincidencia exacta encontrada: {clave} -> {valor_str} | PDF: {match}")
-    else:
-        print(f"No se encontró coincidencia exacta para: {clave} -> {valor_str}")
+        for val in items:
+            val_str = str(val).strip()
+            if not val_str:
+                continue
+
+            # Decidir si es numérico o texto
+            if NUM_REGEX.fullmatch(val_str):
+                # Numérico: extraer y comparar tokens numéricos
+                candidates = NUM_REGEX.findall(texto_pdf)
+                clean_json = re.sub(r"\D", "", val_str)
+                best_score, best = -1, None
+                for tok in candidates:
+                    clean_tok = re.sub(r"\D", "", tok)
+                    sc = fuzz.ratio(clean_json, clean_tok)
+                    if sc > best_score:
+                        best_score, best = sc, tok
+            else:
+                # Texto: generar n-gramas según número de palabras
+                n = len(val_str.split())
+                best_score, best = -1, None
+                json_norm = re.sub(r'\s+', ' ', val_str).lower()
+                for i in range(len(words) - n + 1):
+                    cand = ' '.join(words[i:i+n])
+                    sc = fuzz.ratio(json_norm, cand.lower())
+                    if sc > best_score:
+                        best_score, best = sc, cand
+
+            # Inferencia difusa
+            label, _ = infer_label(best_score)
+            print(f"  Valor JSON: {val_str}")
+            print(f"  Mejor candidato PDF: {best}")
+            print(f"  Similitud: {best_score}% -> Categoría fuzzy: {label}")
 
 if __name__ == "__main__":
     comparar_valores_json_pdf('datos.txt', 'ley.pdf')
+
