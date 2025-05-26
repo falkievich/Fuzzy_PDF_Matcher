@@ -8,16 +8,19 @@ from funcs.fuzzy_logic import infer_label
 # Regex para extraer números con separadores
 NUM_REGEX = re.compile(r"\b\d{1,3}(?:[.\-]\d{1,3})*\b")
 
-def comparar_valores_json_pdf(json_path: str = 'datos.txt', pdf_path: str = 'ley.pdf'):
+def comparar_valores_json_pdf(json_path: str, pdf_path: str):
     json_data = extraer_valores_txt(json_path)
     if not json_data:
-        return
+        return {"fields": []}
 
     texto_pdf = extraer_texto_pdf(pdf_path)
     words = texto_pdf.split()
 
+    resultado = {"fields": []}
+
     for key, value in json_data.items():
-        print(f"\nCampo: {key}")
+        field_entry = {"name": key, "comparisons": []}
+
         # Preparar lista de valores a comparar
         items = []
         if isinstance(value, dict):
@@ -33,12 +36,12 @@ def comparar_valores_json_pdf(json_path: str = 'datos.txt', pdf_path: str = 'ley
             if not val_str:
                 continue
 
-            # Decidir si es numérico o texto
+            # Buscar el mejor candidato y su score
             if NUM_REGEX.fullmatch(val_str):
                 # Numérico: extraer y comparar tokens numéricos
                 candidates = NUM_REGEX.findall(texto_pdf)
                 clean_json = re.sub(r"\D", "", val_str)
-                best_score, best = -1, None
+                best_score, best = -1.0, None
                 for tok in candidates:
                     clean_tok = re.sub(r"\D", "", tok)
                     sc = fuzz.ratio(clean_json, clean_tok)
@@ -47,7 +50,7 @@ def comparar_valores_json_pdf(json_path: str = 'datos.txt', pdf_path: str = 'ley
             else:
                 # Texto: generar n-gramas según número de palabras
                 n = len(val_str.split())
-                best_score, best = -1, None
+                best_score, best = -1.0, None
                 json_norm = re.sub(r'\s+', ' ', val_str).lower()
                 for i in range(len(words) - n + 1):
                     cand = ' '.join(words[i:i+n])
@@ -55,12 +58,15 @@ def comparar_valores_json_pdf(json_path: str = 'datos.txt', pdf_path: str = 'ley
                     if sc > best_score:
                         best_score, best = sc, cand
 
-            # Inferencia difusa
             label, _ = infer_label(best_score)
-            print(f"  Valor JSON: {val_str}")
-            print(f"  Mejor candidato PDF: {best}")
-            print(f"  Similitud: {best_score}% -> Categoría fuzzy: {label}")
 
-if __name__ == "__main__":
-    comparar_valores_json_pdf('datos.txt', 'ley.pdf')
+            field_entry["comparisons"].append({
+                "json_value": val_str,
+                "pdf_value": best,
+                "similarity": round(best_score, 2),
+                "label": label
+            })
 
+        resultado["fields"].append(field_entry)
+
+    return resultado

@@ -1,6 +1,8 @@
 # File: app.py
-from funcs.comparar_json_pdf import comparar_valores_json_pdf
+from fastapi import FastAPI
+from routes.compare_routes import router as compare_router
 
-if __name__ == "__main__":
-    # Ejecuta la comparación avanzada con lógica difusa
-    comparar_valores_json_pdf('datos.txt', 'ley.pdf')
+app = FastAPI(title="Fuzzy Matcher API")
+
+# Montamos el router de nuestro endpoint
+app.include_router(compare_router, prefix="/api")
