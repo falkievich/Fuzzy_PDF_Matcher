@@ -1,3 +1,6 @@
+"""
+Abre un archivo PDF, extrae todo su texto concatenado y luego lo normaliza al eliminar saltos de línea, convertirlos en espacios y colapsar múltiples espacios consecutivos, devolviendo una sola línea de texto limpia.
+"""
 import fitz  # PyMuPDF se usa en vez de PyPDF2 para extraer texto de PDF
 import re
 

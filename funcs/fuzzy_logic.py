@@ -1,5 +1,6 @@
-# File: funcs/fuzzy_logic.py
-import unicodedata
+"""
+Define funciones de lógica difusa mediante funciones de membresía triangular (baja, media, alta, exacta), realiza la inferencia difusa a partir de un porcentaje de similitud y calcula un valor crisp mediante defuzzificación por centro de gravedad.
+"""
 from typing import Callable, Dict, Tuple
 
 # Función de membresía triangular
@@ -41,5 +42,3 @@ def infer_label(similarity: float) -> Tuple[str, float]:
     label = max(memberships, key=memberships.get)
     crisp = defuzzify(memberships)
     return label, crisp
-
-# ============================================

@@ -1,4 +1,8 @@
-# File: routes/compare_routes.py
+"""
+Router de FastAPI que expone el endpoint POST /upload_files para recibir un archivo de datos
+(.json o .txt) y un PDF, guarda ambos en ficheros temporales, invoca la función de comparación
+fuzzy y devuelve los resultados estructurados en JSON.
+"""
 import os
 import tempfile
 

@@ -1,3 +1,7 @@
+"""
+Lee un archivo de texto con formato JSON, carga su contenido en un diccionario y recorre recursivamente cada valor (en el nivel raíz, en listas y en diccionarios anidados) para normalizarlo. 
+La normalización elimina espacios múltiples y aplica strip a los strings para dejarlos listos para su posterior procesamiento.
+"""
 import json
 import re # Se usara para buscar patrones en el texto extraído del PDF
 
