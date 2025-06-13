@@ -10,6 +10,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
 from funcs.comparar_json_pdf import comparar_valores_json_pdf
+from funcs.detectar_personas_pdf import detectar_personas_dni_matricula
 
 #---------------------------------------------------------- Router
 router = APIRouter()
@@ -20,6 +21,7 @@ async def compare(
     data_file: UploadFile = File(..., description="Archivo de datos (.json, .txt)"),
     pdf_file: UploadFile = File(..., description="Archivo PDF")
 ):
+    print("hola")
     ext_data = os.path.splitext(data_file.filename)[1].lower()
     if ext_data not in (".json", ".txt"):
         raise HTTPException(400, "El archivo de datos debe ser .json o .txt")
@@ -38,6 +40,12 @@ async def compare(
 
     # Ejecutar comparación y obtener resultado estructurado
     result = comparar_valores_json_pdf(tmp_data.name, tmp_pdf.name)
+
+    # Detectar personas con DNI o matrícula
+    personas_detectadas = detectar_personas_dni_matricula(tmp_pdf.name)
+
+    # Incluir en el resultado
+    result["personas_identificadas_pdf"] = personas_detectadas
 
     # Limpiar temporales
     try: os.unlink(tmp_data.name)
