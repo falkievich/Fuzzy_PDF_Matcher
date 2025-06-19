@@ -1,35 +1,50 @@
 import re
-from funcs.extraer_texto_pdf import extraer_texto_pdf
+from funcs.extraer_texto_pdf import normalizacion_avanzada_pdf
 
 def detectar_personas_dni_matricula(path_pdf: str):
-    texto = extraer_texto_pdf(path_pdf)
+    """
+    Extrae y normaliza el texto de un PDF (normalizacion_avanzada_pdf), luego detecta pares
+    Nombre + DNI y Nombre + Matrícula usando patrones adaptados
+    al texto preprocesado.
+    """
+    texto = normalizacion_avanzada_pdf(path_pdf)
+    personas = {}
+    #print("texto pdf: ", texto)
 
-    # Regex para DNI y Matrícula
-    regex_dni = r'([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,2})\s*,?\s*D\.?\s*N\.?\s*I\.?\s*(?:[º°])?\s*(\d{1,3}(?:\.\d{3}){0,2}|\d+)'
-    regex_mat = (
-        r'([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){0,2})'     # Nombre/apellido 1 a 3 palabras
-        r'\s*,?\s*'                                        # Coma opcional y espacios
-        r'(?:.*?\babogado[a]?\b.*?,?\s*)?'                 # Opcional: "abogado" o "abogada" en cualquier parte, con texto antes/después
-        r'(?:de|con|en)?\s*matr[ií]cula\b'                 # "de matrícula", "con matrícula" o "en matrícula"
-        r'(?:\s*N[º°]?)?\s*'                               # Opcional: N°, Nº, etc.
-        r'([A-Z0-9\.\-]{3,})'                              # Matrícula alfanumérica (mínimo 3 caracteres)
+    # Patrón para encontrar solo el número de DNI o MATRÍCULA
+    pattern_dni_num = re.compile(r'\bDNI\s+(\d+)\b', flags=re.IGNORECASE)
+    pattern_mat_num = re.compile(r'\bMATRICULA\s+(\d+)\b', flags=re.IGNORECASE)
+
+    # Patrón para nombres: cada palabra empieza con mayúscula seguida de letras
+    name_pattern = re.compile(
+        r'\b([A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ]+'
+        r'(?:\s+[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ]+){0,2})\b'
     )
 
-    personas = {}
+    window_size = 100  # caracteres hacia atrás desde el inicio del match
 
-    # Detectar nombres + DNI
-    for nombre, dni in re.findall(regex_dni, texto):
-        clave = f"DNI N° {dni}"
-        if clave not in personas:
-            personas[clave] = nombre.strip().title()
+    # Función auxiliar para extraer el nombre más cercano antes de `idx`
+    def nombre_cercano(idx: int) -> str:
+        start = max(0, idx - window_size)
+        window = texto[start:idx]
+        nombres = name_pattern.findall(window)
+        return nombres[-1] if nombres else ""
 
-    # Detectar nombres + Matrícula
-    for nombre, matricula in re.findall(regex_mat, texto):
-        clave = f"Matrícula N° {matricula}"
-        if clave not in personas:
-            personas[clave] = nombre.strip().title()
+    # Procesar todos los DNIs encontrados
+    for m in pattern_dni_num.finditer(texto):
+        dni = m.group(1)
+        nombre = nombre_cercano(m.start())
+        if nombre:
+            clave = f"DNI N° {dni}"
+            personas.setdefault(clave, nombre.title())
 
-    # Resultado final
-    resultado = [f"{nombre} | {clave}" for clave, nombre in personas.items()]
+    # Procesar todas las MATRÍCULAS encontradas
+    for m in pattern_mat_num.finditer(texto):
+        mat = m.group(1)
+        nombre = nombre_cercano(m.start())
+        if nombre:
+            clave = f"Matrícula N° {mat}"
+            personas.setdefault(clave, nombre.title())
 
-    return resultado
+    # Formatear resultado
+    return [f"{nombre} | {clave}" for clave, nombre in personas.items()]

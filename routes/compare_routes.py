@@ -21,7 +21,7 @@ async def compare(
     data_file: UploadFile = File(..., description="Archivo de datos (.json, .txt)"),
     pdf_file: UploadFile = File(..., description="Archivo PDF")
 ):
-    print("hola")
+    print("hola, soy una ruta 7 xd")
     ext_data = os.path.splitext(data_file.filename)[1].lower()
     if ext_data not in (".json", ".txt"):
         raise HTTPException(400, "El archivo de datos debe ser .json o .txt")

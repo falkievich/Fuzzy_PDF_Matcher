@@ -4,7 +4,7 @@ Carga un archivo JSON y un PDF, extrae valores del JSON (en la raíz, diccionari
 import re
 from rapidfuzz import fuzz
 from funcs.extraer_datos_json import extraer_valores_txt
-from funcs.extraer_texto_pdf import extraer_texto_pdf
+from funcs.extraer_texto_pdf import normalizacion_simple_pdf
 from funcs.fuzzy_logic import infer_label
 
 # Regex para extraer números con separadores
@@ -15,7 +15,7 @@ def comparar_valores_json_pdf(json_path: str, pdf_path: str):
     if not json_data:
         return {"exacta": [], "alta": [], "media": [], "baja": []}
 
-    texto_pdf = extraer_texto_pdf(pdf_path)
+    texto_pdf = normalizacion_simple_pdf(pdf_path)
     words = texto_pdf.split()
 
     # Lista plana de todas las comparaciones
