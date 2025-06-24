@@ -6,7 +6,7 @@ fuzzy y devuelve los resultados estructurados en JSON.
 import os
 import tempfile
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Body
 from fastapi.responses import JSONResponse
 
 from funcs.comparar_json_pdf import comparar_valores_json_pdf
@@ -21,7 +21,7 @@ async def compare(
     data_file: UploadFile = File(..., description="Archivo de datos (.json, .txt)"),
     pdf_file: UploadFile = File(..., description="Archivo PDF")
 ):
-    print("hola, soy una ruta 7 xd")
+    print("hola, soy una ruta 1 xd")
     ext_data = os.path.splitext(data_file.filename)[1].lower()
     if ext_data not in (".json", ".txt"):
         raise HTTPException(400, "El archivo de datos debe ser .json o .txt")
@@ -54,3 +54,19 @@ async def compare(
     except: pass
 
     return JSONResponse(result)
+
+# ---------------------------------------------------------- Post - Detectar Nombre+Dni o Nombre+Matrícula 
+@router.post("/detect_phrase", summary="Detectar nombres+DNI o matrícula a partir de texto libre")
+async def detect_personas(
+    payload: dict = Body(..., description="JSON con { 'text': '<frase o párrafo>' }")
+):
+    text = payload.get("text", "")
+    if not isinstance(text, str) or not text.strip():
+        raise HTTPException(400, "Se requiere el campo 'text' con la frase a analizar")
+
+    try:
+        resultado = detectar_personas_dni_matricula(raw_text=text)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+    return JSONResponse({"detected": resultado})
