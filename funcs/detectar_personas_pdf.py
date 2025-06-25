@@ -28,75 +28,98 @@ def detectar_personas_dni_matricula(path_pdf: str = None, raw_text: str = None):
     }
 
     # 3) Patrón de nombre: mínimo 1 palabra que empiecen en mayúscula, máximo 3 (la palabra iniclal (1) + 2 más que cumplan los requisitos)
-    name_pattern = re.compile(
+    name_pat_natural = re.compile(
         r'\b([A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ]+'
         r'(?:\s+[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ]+){1,2})\b'
     )
 
-    window_size = 100  # caracteres hacia atrás desde el inicio del match
+    window_natural  = 100  # caracteres hacia atrás desde el inicio del match
 
-    def nombre_cercano(idx: int) -> str:
+    # 4) Patrón de nombre “jurídico”: hasta 7 palabras, admitiendo puntos y & en cada token
+    name_pat_juridico = re.compile(
+        r'\b('
+        r'[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ\.\&]+'              # primera “palabra” con letras, puntos o &
+        r'(?:\s+[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ\.\&]+){1,7}'  # de 1 a 7 palabras adicionales iguales
+        r')\b'
+    )
+    window_juridico = 70
+
+    # Extrae el último nombre que coincide con name_pattern dentro de los window_size caracteres anteriores a idx
+    def extraer_nombre(idx: int, name_pattern: re.Pattern, window_size: int) -> str:
         start = max(0, idx - window_size)
-        window = texto[start:idx]
-        matches = name_pattern.findall(window)
+        segmento = texto[start:idx]
+        matches = name_pattern.findall(segmento)
         return matches[-1] if matches else ""
 
-    # 4) Stop-words que no forman parte de un nombre
+    # 5) Stop-words
     STOP_WORDS = {"dni", "matricula", "mp", "cuif", "cuit", "cuil"}
 
-    # 5) Recolectar etiquetas por nombre crudo
+    # 6) Primer pase: detección “natural” para todas las etiquetas
     raw_grouped = defaultdict(list)  # raw_name -> [ "DNI N° xxx", ... ]
     for etiqueta, pat in doc_patterns.items():
         regex = re.compile(pat, flags=re.IGNORECASE)
         for m in regex.finditer(texto):
-            numero = m.group(1)
-            raw_name = nombre_cercano(m.start())
+            num = m.group(1)
+            # usar patrón natural
+            raw_name = extraer_nombre(m.start(), name_pat_natural, window_natural)
             if not raw_name:
                 continue
-            # Filtrar stop-words del raw_name
-            tokens = [tok for tok in raw_name.split() if tok.lower() not in STOP_WORDS]
+            # filtrar stop-words
+            tokens = [t for t in raw_name.split() if t.lower() not in STOP_WORDS]
             if len(tokens) < 2:
                 continue
             clean_name = " ".join(tokens)
-            clave = f"{etiqueta} N° {numero}"
+            clave = f"{etiqueta} N° {num}"
             if clave not in raw_grouped[clean_name]:
                 raw_grouped[clean_name].append(clave)
 
-    # 6) Agrupación por subconjunto de tokens (tolerancia k)
-    k = 1  # máximo número de tokens faltantes permitidos
-    merged = []  # lista de dicts: {'tokens': set, 'name': str, 'tags': [str,...]}
+    # 7) Segundo pase: rehacer nombres para entradas SOLO CUIT
+    for name, tags in list(raw_grouped.items()):
+        # comprobar si solo tiene CUIT
+        if len(tags) == 1 and tags[0].upper().startswith("CUIT "):
+            # extraer el número
+            num = tags[0].split("N°")[1].strip()
+            # buscar la posición de CUIT num en el texto
+            pat_cuit = re.compile(r'\bCUIT\s+' + re.escape(num) + r'\b', flags=re.IGNORECASE)
+            m = pat_cuit.search(texto)
+            if m:
+                # extraer nombre con ventana reducida y patrón jurídico
+                new_raw = extraer_nombre(m.start(), name_pat_juridico, window_juridico)
+                if new_raw:
+                    tokens = [t for t in new_raw.split() if t.lower() not in STOP_WORDS]
+                    if len(tokens) >= 2:
+                        new_clean = " ".join(tokens)
+                        # reasignar tags al nuevo nombre
+                        raw_grouped[new_clean] = raw_grouped.pop(name)
 
+    # 8) Agrupación por subconjunto de tokens (tolerancia k=1)
+    k = 1
+    merged = []
     for raw_name, tags in raw_grouped.items():
-        new_tokens = set(tok.lower() for tok in raw_name.split())
+        toks = set(raw_name.lower().split())
         placed = False
 
         for entry in merged:
             existing = entry['tokens']
-            # Si new es subconjunto de existing con diferencia <= k
-            if new_tokens <= existing and len(existing) - len(new_tokens) <= k:
-                for tag in tags:
-                    if tag not in entry['tags']:
-                        entry['tags'].append(tag)
+            # nuevo ⊆ existente? - Si toks es subconjunto de existing con diferencia <= k
+            if toks <= existing and len(existing) - len(toks) <= k:
+                entry['tags'] += [t for t in tags if t not in entry['tags']]
                 placed = True
                 break
-            # Si existing es subconjunto de new con diferencia <= k
-            if existing <= new_tokens and len(new_tokens) - len(existing) <= k:
-                entry['tokens'] = new_tokens
-                entry['name'] = raw_name
-                for tag in tags:
-                    if tag not in entry['tags']:
-                        entry['tags'].append(tag)
+            # existente ⊆ nuevo? - Si existing es subconjunto de new con diferencia <= k
+            if existing <= toks and len(toks) - len(existing) <= k:
+                entry['tokens'] = toks
+                entry['name']   = raw_name
+                entry['tags']   = list(set(entry['tags'] + tags))
                 placed = True
                 break
 
         if not placed:
-            merged.append({'tokens': new_tokens, 'name': raw_name, 'tags': list(tags)})
+            merged.append({'tokens': toks, 'name': raw_name, 'tags': list(tags)})
 
-    # 7) Formatear resultado
+    # 9) Formatear resultado
     resultado = []
-    for entry in merged:
-        nombre = entry['name'].title()
-        etiquetas = entry['tags']
-        resultado.append(f"{nombre} | " + " | ".join(etiquetas))
+    for e in merged:
+        resultado.append(f"{e['name'].title()} | " + " | ".join(e['tags']))
 
     return resultado
