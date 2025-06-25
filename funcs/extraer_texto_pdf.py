@@ -36,15 +36,28 @@ def normalizacion_avanzada_pdf(path_pdf: str = None, raw_text: str = None) -> st
     else:
         raise ValueError("Debe proporcionarse 'path_pdf' o 'raw_text'")
 
-    # 2) Unificar sinónimos (case-insensitive)
-    # Dni
+    # 2) Unificar sinónimos (case-insensitive), de forma más genérica
+    # — Primero cubrimos “Documento” → “DNI”
     texto = re.sub(r'\bDocumento\b', 'DNI', texto, flags=re.IGNORECASE)
-    # Matrículas
+    # — Varientes de “D.N.I.”, “DN-I”, “DNI” con puntos/guiones/espacios entre letras → “DNI”
+    texto = re.sub(r'\bD[\W_]*N[\W_]*I\b', 'DNI', texto, flags=re.IGNORECASE)
+
+    # — Primero cubrimos “Matrícula” con o sin acento → “MATRICULA”
     texto = re.sub(r'\bMatr[ií]cula\b', 'MATRICULA', texto, flags=re.IGNORECASE)
-    texto = re.sub(r'\bMP\b', 'MATRICULA', texto, flags=re.IGNORECASE)
+    # — Varientes de “M.P.”, “M-P-”, “MP” con puntos/guiones/espacios entre letras → “MATRICULA”
+    texto = re.sub(r'\bM[\W_]*P\b', 'MATRICULA', texto, flags=re.IGNORECASE)
 
     # 3) Eliminar 'N°', 'Nº', guiones o dos puntos solo si van delante de un dígito
     texto = re.sub(r'\bN[º°]?\s*[-:]?\s*(?=\d)', '', texto)
+
+    # 3.1) Asegurar siempre un espacio entre etiqueta y número,
+    #      eliminando cualquier caracter no alfanumérico que pueda quedar pegado
+    texto = re.sub(
+        r'\b(DNI|MATRICULA)[^\w]*(\d+)\b',
+        r'\1 \2',
+        texto,
+        flags=re.IGNORECASE
+    )
 
     # 4) Quitar separadores de miles (puntos o guiones entre dígitos)
     texto = re.sub(r'(?<=\d)[\.\-](?=\d)', '', texto)
