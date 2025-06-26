@@ -1,13 +1,13 @@
 # Fuzzy PDF Matcher
 
-Este programa ofrece dos funcionalidades principales, 1.La extracción y comparación de información de documentos PDF mediante lógica difusa, 2.La detección automática de datos personales y jurídicos.
+Este programa ofrece dos funcionalidades principales, 1. Permite la extracción y comparación de información de documentos PDF mediante el uso de la lógica difusa. 2. Permite la detección automática de datos pertenecientes a personas y organizaciones.
 
 ---
 
 ## 1. Búsqueda fuzzy de términos en PDF
 
 - **Descripción**  
-  Mediante una API, puedes enviar un `.pdf` y un archivo de datos (`.json` o `.txt`) que contenga los valores que quieres buscar (por ejemplo,  
+  Mediante una API, puedes enviar un `.pdf` y un archivo de datos (`.json` o `.txt`) que contenga los valores que quieres buscar, por ejemplo:  
   ```json
   { "nombre_apellido": "thiago" }
 
@@ -21,8 +21,8 @@ Este programa ofrece dos funcionalidades principales, 1.La extracción y compara
   4. Se devuelven las palabras o conjuntos de palabras del PDF que más se parecen a los valores del .json/.txt.
 
 ---
-## 2. Detección automática de datos personales y jurídicos
-  Este módulo se encarga de extraer y clasificar información de identificación tanto de personas físicas como de organizaciones en un texto o PDF. Se divide en dos etapas principales:
+## 2. Detección automática de datos de personas y organizaciones
+  Este módulo se encarga de extraer y clasificar información de identificación tanto de personas físicas como de organizaciones (personas juridicas) en un texto o PDF. Se divide en dos etapas principales:
 
 * **Normalización del texto**  
 * **Búsqueda y agrupación de patrones de identificación**
